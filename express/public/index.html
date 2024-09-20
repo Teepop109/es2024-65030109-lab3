@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Directory</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background-color: #f0f2f5; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: #fff; 
+            border-radius: 10px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+            padding: 30px; 
+        }
+        h1 { 
+            text-align: center; 
+            color: #333; 
+            font-size: 2.2em; 
+            margin-bottom: 20px;
+        }
+        h2 { 
+            color: #007bff; 
+            font-size: 1.5em;
+        }
+        form { 
+            margin-bottom: 20px; 
+            padding: 20px; 
+            background-color: #f9fafb; 
+            border: 1px solid #e3e3e3; 
+            border-radius: 8px; 
+        }
+        input { 
+            display: block; 
+            margin: 10px 0; 
+            padding: 12px; 
+            width: 100%; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
+            font-size: 1em;
+        }
+        input:focus { 
+            border-color: #007bff; 
+            outline: none; 
+        }
+        button { 
+            padding: 12px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            font-size: 1em; 
+            cursor: pointer; 
+        }
+        button:hover { 
+            background-color: #0056b3; 
+        }
+        .user-list { 
+            margin-top: 20px; 
+        }
+        .user { 
+            margin-bottom: 10px; 
+            padding: 15px; 
+            background-color: #f1f3f5; 
+            border-radius: 6px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .user strong { 
+            font-size: 1.1em; 
+        }
+        .user button { 
+            margin-left: 10px; 
+            padding: 8px 12px; 
+            background-color: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 6px;
+        }
+        .user button:hover { 
+            background-color: #218838; 
+        }
+        .user button.delete { 
+            background-color: #dc3545; 
+        }
+        .user button.delete:hover { 
+            background-color: #c82333; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>User Directory</h1>
+        
+        <!-- Add User Form -->
+        <form id="addUserForm">
+            <h2>Add User</h2>
+            <input type="text" id="studentCode" placeholder="Student Code" required>
+            <input type="text" id="firstName" placeholder="First Name" required>
+            <input type="text" id="lastName" placeholder="Last Name" required>
+            <input type="number" id="age" placeholder="Age" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="tel" id="telNumber" placeholder="Telephone Number" required>
+            <button type="submit">Add User</button>
+        </form>
+        
+        <!-- Edit User Form -->
+        <form id="editUserForm" style="display: none;">
+            <h2>Edit User</h2>
+            <input type="hidden" id="editId">
+            <input type="text" id="editStudentCode" placeholder="Student Code" required>
+            <input type="text" id="editFirstName" placeholder="First Name" required>
+            <input type="text" id="editLastName" placeholder="Last Name" required>
+            <input type="number" id="editAge" placeholder="Age" required>
+            <input type="email" id="editEmail" placeholder="Email" required>
+            <input type="tel" id="editTelNumber" placeholder="Telephone Number" required>
+            <button type="submit">Update User</button>
+        </form>
+        
+        <!-- User List -->
+        <div class="user-list" id="userList"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsers();
+        });
+
+        // Load users from API
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/students');
+                const students = await response.json();
+                const userList = document.getElementById('userList');
+                userList.innerHTML = '';
+                students.forEach(student => {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'user';
+                    userDiv.innerHTML = `
+                        <strong>${student.studentCode}</strong> - ${student.firstName} ${student.lastName} (${student.age}) - ${student.email} - ${student.telNumber}
+                        <button onclick="editUser('${student._id}', '${student.studentCode}', '${student.firstName}', '${student.lastName}', ${student.age}, '${student.email}', '${student.telNumber}')">Edit</button>
+                        <button class="delete" onclick="deleteUser('${student._id}')">Delete</button>
+                    `;
+                    userList.appendChild(userDiv);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        // Add a new user
+        document.getElementById('addUserForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const studentCode = document.getElementById('studentCode').value;
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const age = parseInt(document.getElementById('age').value);
+            const email = document.getElementById('email').value;
+            const telNumber = document.getElementById('telNumber').value;
+            
+            try {
+                const response = await fetch('/api/students', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentCode, firstName, lastName, age, email, telNumber })
+                });
+                if (response.ok) {
+                    loadUsers();
+                    document.getElementById('addUserForm').reset();
+                } else {
+                    console.error('Error adding user:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error adding user:', error);
+            }
+        });
+
+        // Edit a user
+        window.editUser = (id, studentCode, firstName, lastName, age, email, telNumber) => {
+            document.getElementById('editId').value = id;
+            document.getElementById('editStudentCode').value = studentCode;
+            document.getElementById('editFirstName').value = firstName;
+            document.getElementById('editLastName').value = lastName;
+            document.getElementById('editAge').value = age;
+            document.getElementById('editEmail').value = email;
+            document.getElementById('editTelNumber').value = telNumber;
+            document.getElementById('editUserForm').style.display = 'block';
+        };
+
+        document.getElementById('editUserForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const id = document.getElementById('editId').value;
+            const studentCode = document.getElementById('editStudentCode').value;
+            const firstName = document.getElementById('editFirstName').value;
+            const lastName = document.getElementById('editLastName').value;
+            const age = parseInt(document.getElementById('editAge').value);
+            const email = document.getElementById('editEmail').value;
+            const telNumber = document.getElementById('editTelNumber').value;
+            
+            try {
+                const response = await fetch(`/api/students/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentCode, firstName, lastName, age, email, telNumber })
+                });
+                if (response.ok) {
+                    loadUsers();
+                    document.getElementById('editUserForm').reset();
+                    document.getElementById('editUserForm').style.display = 'none';
+                } else {
+                    console.error('Error updating user:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error updating user:', error);
+            }
+        });
+
+        // Delete a user
+        window.deleteUser = async (id) => {
+            try {
+                const response = await fetch(`/api/students/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadUsers();
+                } else {
+                    console.error('Error deleting user:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+            }
+        };
+    </script>
+</body>
+</html>
